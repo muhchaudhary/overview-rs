@@ -69,6 +69,14 @@
         # Package outputs
         packages = rec {
           default = crateWheel;
+          pythonPackage = pythonVersion.pkgs.buildPythonPackage rec {
+            pname = projectName;
+            format = "wheel";
+            version = projectVersion;
+            src = "${crateWheel}/${wheelName}";
+            doCheck = false;
+            pythonImportsCheck = [projectName];
+          };
           pythonEnv =
             pythonVersion.withPackages
             (ps: [(lib.pythonPackage ps)] ++ (with ps; [ipython numpy pillow]));
