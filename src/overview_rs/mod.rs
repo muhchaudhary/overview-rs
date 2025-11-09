@@ -3,7 +3,7 @@ pub mod hyprland_toplevel_export;
 
 use std::fs::File;
 
-use helpers::{create_shm_buffer, save_frame_to_file};
+use helpers::{create_shm_buffer, read_frame_buffer};
 use hyprland_toplevel_export::hyprland_toplevel_export_frame_v1::{
     Event as FrameEvent, HyprlandToplevelExportFrameV1,
 };
@@ -17,12 +17,13 @@ use wayland_client::{
 };
 
 pub struct AppData {
-    pub shm: Option<wl_shm::WlShm>,
-    pub export_manager: Option<HyprlandToplevelExportManagerV1>,
-    pub frame_info: Option<FrameInfo>,
     pub buffer: Option<wl_buffer::WlBuffer>,
-    pub shm_file: Option<File>,
+    pub captured_buffer: Option<Vec<u8>>,
+    // pub export_manager: Option<HyprlandToplevelExportManagerV1>,
     pub frame_captured: bool,
+    pub frame_info: Option<FrameInfo>,
+    pub shm: Option<wl_shm::WlShm>,
+    pub shm_file: Option<File>,
 }
 
 #[derive(Debug, Clone)]
@@ -31,6 +32,12 @@ pub struct FrameInfo {
     pub width: u32,
     pub height: u32,
     pub stride: u32,
+}
+
+impl FrameInfo {
+    pub fn buffer_size(&self) -> usize {
+        (self.stride * self.height) as usize
+    }
 }
 
 macro_rules! impl_empty_dispatch {
@@ -89,11 +96,10 @@ impl Dispatch<HyprlandToplevelExportFrameV1, ()> for AppData {
 
             FrameEvent::BufferDone => {
                 if let (Some(shm), Some(info)) = (&state.shm, &state.frame_info) {
-                    let size = info.stride * info.height;
                     match create_shm_buffer(
                         shm,
                         qhandle,
-                        size,
+                        info.buffer_size() as u32,
                         info.width,
                         info.height,
                         info.stride,
@@ -125,11 +131,14 @@ impl Dispatch<HyprlandToplevelExportFrameV1, ()> for AppData {
                 let sec = ((tv_sec_hi as u64) << 32) | (tv_sec_lo as u64);
                 println!("Frame ready! Timestamp: {}.{:09} seconds", sec, tv_nsec);
 
-                // Save the frame to a file
+                // Read the frame buffer
                 if let (Some(shm_file), Some(info)) = (&state.shm_file, &state.frame_info) {
-                    match save_frame_to_file(shm_file, info) {
-                        Ok(_) => println!("Frame saved successfully"),
-                        Err(e) => eprintln!("Failed to save frame: {}", e),
+                    match read_frame_buffer(shm_file, info) {
+                        Ok(buffer) => {
+                            println!("Frame buffer captured: {} bytes", buffer.len());
+                            state.captured_buffer = Some(buffer);
+                        }
+                        Err(e) => eprintln!("Failed to read frame buffer: {}", e),
                     }
                 }
 

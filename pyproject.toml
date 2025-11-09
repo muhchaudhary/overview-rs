@@ -1,0 +1,23 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "hyprland-overview-rs"
+version = "0.1.0"
+description = "Capture frames from Hyprland windows using the hyprland-toplevel-export protocol"
+requires-python = ">=3.8"
+keywords = ["hyprland", "wayland", "screen-capture", "toplevel-export"]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Multimedia :: Graphics :: Capture :: Screen Capture",
+]
+
+[project.urls]
+Repository = "https://github.com/muhchaudhary/overview-rs"
+
+[tool.maturin]
+module-name = "hyprland_overview_rs"

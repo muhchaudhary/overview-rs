@@ -1,7 +1,6 @@
 use super::AppData;
 use anyhow::Result;
 use std::fs::File;
-use std::io::Write;
 use std::os::fd::{AsFd, AsRawFd};
 use wayland_client::protocol::{wl_buffer, wl_shm};
 use wayland_client::{QueueHandle, WEnum};
@@ -63,12 +62,10 @@ fn create_shm_fd(size: usize) -> Result<std::fs::File> {
     Ok(unsafe { std::fs::File::from_raw_fd(fd) })
 }
 
-pub fn save_frame_to_file(shm_file: &File, info: &super::FrameInfo) -> Result<()> {
+pub fn read_frame_buffer(shm_file: &File, info: &super::FrameInfo) -> Result<Vec<u8>> {
     let size = (info.stride * info.height) as usize;
 
-    // Read from shared memory
-    let mut buffer = vec![0u8; size];
-    unsafe {
+    let buffer = unsafe {
         let ptr = libc::mmap(
             std::ptr::null_mut(),
             size,
@@ -79,24 +76,15 @@ pub fn save_frame_to_file(shm_file: &File, info: &super::FrameInfo) -> Result<()
         );
 
         if ptr == libc::MAP_FAILED {
-            anyhow::bail!("Failed to mmap buffer");
+            anyhow::bail!("Failed to mmap buffer: {}", std::io::Error::last_os_error());
         }
 
+        let mut buffer = vec![0u8; size];
         std::ptr::copy_nonoverlapping(ptr as *const u8, buffer.as_mut_ptr(), size);
         libc::munmap(ptr, size);
-    }
 
-    // Save as raw BGRA data
-    let filename = "captured_frame.bgra";
-    let mut file = File::create(filename)?;
-    file.write_all(&buffer)?;
+        buffer
+    };
 
-    println!("Frame saved to {}", filename);
-    println!("To view, convert with ImageMagick:");
-    println!(
-        "  convert -size {}x{} -depth 8 bgra:{} output.png",
-        info.width, info.height, filename
-    );
-
-    Ok(())
+    Ok(buffer)
 }
