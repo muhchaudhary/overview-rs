@@ -37,7 +37,7 @@
             cargoToml = ./Cargo.toml;
           }).version;
 
-        pythonVersion = pkgs.python313;
+        pythonVersion = pkgs.python312;
         wheelTail = "cp313-cp313-linux_x86_64"; # Change if pythonVersion changes
         wheelName = "${projectName}-${projectVersion}-${wheelTail}.whl";
         crateCfg = {
