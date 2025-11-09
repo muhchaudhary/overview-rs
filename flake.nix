@@ -38,7 +38,7 @@
           }).version;
 
         pythonVersion = pkgs.python312;
-        wheelTail = "cp313-cp313-linux_x86_64"; # Change if pythonVersion changes
+        wheelTail = "cp312-cp312-linux_x86_64"; # Change if pythonVersion changes
         wheelName = "${projectName}-${projectVersion}-${wheelTail}.whl";
         crateCfg = {
           # src = craneLib.cleanCargoSource (craneLib.path ./.);
